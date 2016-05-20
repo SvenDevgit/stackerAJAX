@@ -8,7 +8,7 @@ var showQuestion = function(question) {
 	// Set the question properties in result
 	var questionElem = result.find('.question-text a');
 	questionElem.attr('href', question.link);
-	questionElem.text(question.title);
+	//questionElem.text(question.title);
 
 	// set the date asked property in result
 	var asked = result.find('.asked-date');
@@ -30,7 +30,27 @@ var showQuestion = function(question) {
 
 	return result;
 };
+//
+var showAnswerer = function(answerer) {
+    // clone our result template code
+  var result = $('.templates .answerer').clone();
+    // Set the answerer properties in result
+  var displayName = result.find('.display-name');
+  displayName.text(answerer.user.display_name);
+  //
+  var userLink = result.find('.user-link a');
+  //userLink.attr('href', answerer.user.link);
+  userLink.text(answerer.user.link);
+  //
+  var postCount = result.find('.post-count');
+  postCount.text(answerer.post_count);
+  //
+  var score = result.find('.score');
+  score.text(answerer.score);
 
+  return result;
+
+};
 
 // this function takes the results object from StackOverflow
 // and returns the number of results and tags to be appended to DOM
@@ -62,7 +82,7 @@ var getUnanswered = function(tags) {
 		url: "http://api.stackexchange.com/2.2/questions/unanswered",
 		data: request,
 		dataType: "jsonp",//use jsonp to avoid cross origin issues
-		type: "GET",
+		type: "GET"
 	})
 	.done(function(result){ //this waits for the ajax to return with a succesful promise object
 		var searchResults = showSearchResults(request.tagged, result.items.length);
@@ -82,6 +102,37 @@ var getUnanswered = function(tags) {
 };
 
 
+var getTopAnswerers = function (searchTerm){
+  //console.log('begin getTopAnswerer');
+  var request = { 
+      site: "stackoverflow"
+  };
+
+  var period = 'all_time';
+  var tag    = searchTerm;
+
+  $.ajax({
+    url: "http://api.stackexchange.com/2.2/tags/" + tag + "/top-answerers/" + period,
+    data: request,
+    dataType: "jsonp",//use jsonp to avoid cross origin issues
+    type: "GET"
+    })
+  .done(function(result){ //this waits for the ajax to return with a succesful promise object;
+     //console.log(result.items[0].user.display_name);
+     var searchResults = showSearchResults(tag, result.items.length);
+     $('.search-results').html(searchResults);
+     $.each(result.items, function(i, item) {
+       var answerer = showAnswerer(item);
+       $('.results').append(answerer);
+     })     
+  })
+  .fail(function(jqXHR, error){ //this waits for the ajax to return with an error promise object
+      console.log('in the fail');
+  });
+  console.log('end getTopAnswerer');
+};
+
+
 $(document).ready( function() {
 	$('.unanswered-getter').submit( function(e){
 		e.preventDefault();
@@ -90,5 +141,14 @@ $(document).ready( function() {
 		// get the value of the tags the user submitted
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
+	});
+	//
+	$('.inspiration-getter').submit( function(e){
+		e.preventDefault();
+		// zero out results if previous search has run
+		$('.results').html('');
+		// get the value of the tags the user submitted
+		var tags = $(this).find("input[name='answerers']").val();
+		getTopAnswerers (tags);
 	});
 });
